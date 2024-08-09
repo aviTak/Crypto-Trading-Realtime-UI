@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-Time Asset Value in USDT</title>
+    <title>Live Crypto Portfolio</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <h1>Portfolio Dashboard</h1>
+    <h1>Live Crypto Portfolio</h1>
     <div id="assets">
         <table>
             <thead>
@@ -34,5 +34,21 @@
     </div>
     <hr>
     <h2>Total Value: <span>{{totalValue}} USDT</span></h2>
+  <!-- WebSocket script added here -->
+    <script>
+        const ws = new WebSocket('{{websocketUrl}}');
+        
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            console.log('Received data:', data);
+
+            // Update the specific coin's quantity and USDT equivalent
+            document.querySelector(`#quantity-${data.coin}`).innerText = data.quantity;
+            document.querySelector(`#usdtEquivalent-${data.coin}`).innerText = `${data.usdtEquivalent} USDT`;
+
+            // Update the total value
+            document.querySelector('#totalValue').innerText = `${data.totalValue} USDT`;
+        };
+    </script>
 </body>
 </html>

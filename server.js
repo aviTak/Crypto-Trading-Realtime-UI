@@ -6,7 +6,7 @@ const CryptoJS = require('crypto-js');
 const fastify = Fastify({ logger: false });
 
 // Define the coins you want to track
-const COINS = process.env.COINS ? process.env.COINS.split(',') : ['USDT'];
+const COINS = process.env.COINS ? process.env.COINS.split(',') : ['AI', 'BTC', 'MANA', 'USDT'];
 
 // Setup WebSocket Server
 const wss = new WebSocket.Server({ noServer: true });
@@ -73,6 +73,7 @@ async function fetchCurrentData() {
     assets[coin] = {
       quantity: quantity.toFixed(6),
       usdtEquivalent: usdtEquivalent.toFixed(2),
+      websocketUrl: process.env.WEBSOCKET_URL
     };
 
     totalValue += usdtEquivalent;
@@ -87,6 +88,12 @@ wss.on('connection', (ws) => {
 
   const streams = COINS.map(coin => `${coin.toLowerCase()}usdt@ticker`).join('/');
   const wsBinance = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
+
+  // Handle errors on the WebSocket connection
+  wsBinance.on('error', (error) => {
+    console.error('WebSocket error:', error.message);
+    ws.send(JSON.stringify({ error: 'Error connecting to Binance WebSocket' }));
+  });
 
   wsBinance.on('message', async (data) => {
     const parsedData = JSON.parse(data);
@@ -103,7 +110,9 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     console.log('Client disconnected');
-    wsBinance.close();
+    if (wsBinance.readyState === WebSocket.OPEN || wsBinance.readyState === WebSocket.CONNECTING) {
+      wsBinance.close();
+    }
   });
 });
 
