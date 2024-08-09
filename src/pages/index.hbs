@@ -1,19 +1,34 @@
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Real-Time Asset Value in USDT</title>
-    <link rel="stylesheet" href="/style.css" />
-  </head>
-  <body>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
     <h1>Real-Time Asset Value in USDT</h1>
     <div id="assets">
-      {{#each coins}}
-        <p><strong>{{this}}:</strong>
-          <span id="{{this}}-value">{{values.this}} USDT</span></p>
-      {{/each}}
+        <table>
+            <thead>
+                <tr>
+                    <th>Coin</th>
+                    <th>Quantity</th>
+                    <th>USDT Equivalent</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each coins}}
+                <tr>
+                    <td>{{this}}</td>
+                    <td>{{../assets.[this].quantity}}</td>
+                    <td>{{../assets.[this].usdtEquivalent}} USDT</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
     </div>
-    <hr />
-    <h2>Total Value: <span id="total-value">{{total}} USDT</span></h2>
-  </body>
+    <hr>
+    <h2>Total Value: <span>{{totalValue}} USDT</span></h2>
+</body>
 </html>
