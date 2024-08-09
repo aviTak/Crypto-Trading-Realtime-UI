@@ -1,3 +1,5 @@
+require('dotenv').config(); // Load environment variables
+
 const path = require('path');
 const Fastify = require('fastify');
 const fetch = require('node-fetch');
@@ -40,7 +42,7 @@ async function fetchCurrentData() {
   try {
     const API_KEY = process.env.BINANCE_API_KEY;
     const API_SECRET = process.env.BINANCE_API_SECRET;
-    const BASE_URL = 'https://testnet.binance.vision';
+    const BASE_URL = process.env.BASE_URL;
 
     const timestamp = Date.now();
     const queryString = `timestamp=${timestamp}`;
@@ -95,11 +97,13 @@ async function fetchCurrentData() {
   }
 }
 
-// WebSocket to handle real-time updates
 wss.on('connection', (ws) => {
   console.log('Client connected');
 
-  const streams = COINS.map(coin => `${coin.toLowerCase()}usdt@ticker`).join('/');
+  // Dynamically construct streams for the coins you're tracking, excluding USDT
+  const streams = COINS.filter(coin => coin !== 'USDT')
+                      .map(coin => `${coin.toLowerCase()}usdt@ticker`)
+                      .join('/');
   const binanceUrl = `wss://stream.binance.com:9443/ws/${streams}`;
   console.log(`Connecting to Binance WebSocket: ${binanceUrl}`);
 
@@ -114,16 +118,23 @@ wss.on('connection', (ws) => {
     ws.send(JSON.stringify({ error: 'Error connecting to Binance WebSocket' }));
   });
 
+  wsBinance.on('close', (code, reason) => {
+    console.error('Binance WebSocket closed:', code, reason);
+  });
+
   wsBinance.on('message', async (data) => {
     try {
       const parsedData = JSON.parse(data);
-      const coin = parsedData.s.slice(0, -4); // Get the coin symbol from the ticker
+      const coin = parsedData.s.slice(0, -4).toUpperCase(); // Get the coin symbol from the ticker
+
+      console.log('Received data from Binance:', parsedData);
 
       const latestData = await fetchCurrentData();
 
+      // Send data back to the connected client
       ws.send(JSON.stringify({
-        coin: coin.toUpperCase(),
-        ...latestData.assets[coin.toUpperCase()],
+        coin: coin,
+        ...latestData.assets[coin],
         totalValue: latestData.totalValue.toFixed(2),
       }));
 
@@ -140,7 +151,6 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Run the server and WebSocket server
 fastify.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' }, (err, address) => {
   if (err) {
     console.error('Fastify server error:', err);
@@ -152,9 +162,13 @@ fastify.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' }, (err, addres
   const server = fastify.server;
 
   server.on('upgrade', (request, socket, head) => {
-    console.log('WebSocket upgrade request received');
+    console.log('WebSocket upgrade request received');  // Logging here to ensure the upgrade request is handled
     wss.handleUpgrade(request, socket, head, (ws) => {
+      console.log('Handling WebSocket upgrade'); // Confirm that the upgrade is being handled
       wss.emit('connection', ws, request);
     });
   });
 });
+
+
+

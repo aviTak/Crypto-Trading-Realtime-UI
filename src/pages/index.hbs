@@ -17,37 +17,66 @@
                     <th>Value in USDT</th>
                 </tr>
             </thead>
-
-          <tbody>
-    {{#each coins}}
-    <tr>
-        <td>{{this}}</td>
-        {{#with (lookup ../assets this)}}
-        <td>{{quantity}}</td>
-        <td>{{usdtEquivalent}} USDT</td>
-        {{/with}}
-    </tr>
-    {{/each}}
-</tbody>
-
+            <tbody>
+                {{#each coins}}
+                <tr>
+                    <td>{{this}}</td>
+                    {{#with (lookup ../assets this)}}
+                    <td id="quantity-{{@../this}}">{{quantity}}</td>
+                    <td id="usdtEquivalent-{{@../this}}">{{usdtEquivalent}} USDT</td>
+                    {{/with}}
+                </tr>
+                {{/each}}
+            </tbody>
         </table>
     </div>
     <hr>
-    <h2>Total Value: <span>{{totalValue}} USDT</span></h2>
-  <!-- WebSocket script added here -->
+    <h2>Total Value: <span id="totalValue">{{totalValue}} USDT</span></h2>
+
+    <!-- WebSocket script added here -->
     <script>
-        const ws = new WebSocket('{{websocketUrl}}');
-        
+        // Replace with your actual WebSocket URL if needed
+        const ws = new WebSocket('ws://localhost:3000');
+
+        ws.onopen = function() {
+            console.log('WebSocket connection opened');
+        };
+
         ws.onmessage = function(event) {
+            console.log('WebSocket message received:', event.data);
+
             const data = JSON.parse(event.data);
-            console.log('Received data:', data);
+            console.log('Parsed data:', data);
+
+            // Extract the coin symbol from the received data
+            const coin = data.coin;
 
             // Update the specific coin's quantity and USDT equivalent
-            document.querySelector(`#quantity-${data.coin}`).innerText = data.quantity;
-            document.querySelector(`#usdtEquivalent-${data.coin}`).innerText = `${data.usdtEquivalent} USDT`;
+            const quantityElement = document.querySelector(`#quantity-${coin}`);
+            const usdtEquivalentElement = document.querySelector(`#usdtEquivalent-${coin}`);
+
+            if (quantityElement && usdtEquivalentElement) {
+                quantityElement.innerText = data.quantity;
+                usdtEquivalentElement.innerText = `${data.usdtEquivalent} USDT`;
+                console.log(`Updated ${coin}: Quantity = ${data.quantity}, USDT Equivalent = ${data.usdtEquivalent}`);
+            } else {
+                console.error(`Could not find DOM elements for ${coin}`);
+            }
 
             // Update the total value
-            document.querySelector('#totalValue').innerText = `${data.totalValue} USDT`;
+            const totalValueElement = document.querySelector('#totalValue');
+            if (totalValueElement) {
+                totalValueElement.innerText = `${data.totalValue} USDT`;
+                console.log(`Total value updated to: ${data.totalValue} USDT`);
+            }
+        };
+
+        ws.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+
+        ws.onclose = function() {
+            console.log('WebSocket connection closed');
         };
     </script>
 </body>
