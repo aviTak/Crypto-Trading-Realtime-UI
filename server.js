@@ -1,119 +1,93 @@
-/**
- * This is the main Node.js server script for your project
- * Check out the two endpoints this back-end API provides in fastify.get and fastify.post below
- */
-
+require("dotenv").config();
+const Fastify = require("fastify");
+const fastifyStatic = require("@fastify/static");
+const fastifyView = require("@fastify/view");
 const path = require("path");
+const handlebars = require("handlebars");
+const fetch = require("node-fetch");
+const CryptoJS = require("crypto-js");
 
-// Require the fastify framework and instantiate it
-const fastify = require("fastify")({
-  // Set this to true for detailed logging:
-  logger: false,
-});
+const fastify = Fastify({ logger: true });
 
-// ADD FAVORITES ARRAY VARIABLE FROM TODO HERE
-
-// Setup our static files
-fastify.register(require("@fastify/static"), {
+// Serve static files like CSS
+fastify.register(fastifyStatic, {
   root: path.join(__dirname, "public"),
   prefix: "/", // optional: default '/'
 });
 
-// Formbody lets us parse incoming forms
-fastify.register(require("@fastify/formbody"));
-
-// View is a templating manager for fastify
-fastify.register(require("@fastify/view"), {
+// Set up view engine with Handlebars
+fastify.register(fastifyView, {
   engine: {
-    handlebars: require("handlebars"),
+    handlebars,
   },
+  root: path.join(__dirname, "src"),
+  layout: false,
 });
 
-// Load and parse SEO data
-const seo = require("./src/seo.json");
-if (seo.url === "glitch-default") {
-  seo.url = `https://${process.env.PROJECT_DOMAIN}.glitch.me`;
+// Helper function to create Binance API signature
+function createSignature(queryString, secret) {
+  return CryptoJS.HmacSHA256(queryString, secret).toString(CryptoJS.enc.Hex);
 }
 
-/**
- * Our home page route
- *
- * Returns src/pages/index.hbs with data built into it
- */
-fastify.get("/", function (request, reply) {
-  // params is an object we'll pass to our handlebars template
-  let params = { seo: seo };
+// Define your route
+fastify.get("/", async (request, reply) => {
+  const API_KEY = process.env.BINANCE_API_KEY;
+  const API_SECRET = process.env.BINANCE_API_SECRET;
+  const BASE_URL = "https://testnet.binance.vision";
 
-  // If someone clicked the option for a random color it'll be passed in the querystring
-  if (request.query.randomize) {
-    // We need to load our color data file, pick one at random, and add it to the params
-    const colors = require("./src/colors.json");
-    const allColors = Object.keys(colors);
-    let currentColor = allColors[(allColors.length * Math.random()) << 0];
+  const COINS = ["AI", "BTC", "MANA", "USDT"];
+  const timestamp = Date.now();
+  const queryString = `timestamp=${timestamp}`;
+  const signature = createSignature(queryString, API_SECRET);
 
-    // Add the color properties to the params object
-    params = {
-      color: colors[currentColor],
-      colorError: null,
-      seo: seo,
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/v3/account?${queryString}&signature=${signature}`,
+      {
+        headers: {
+          "X-MBX-APIKEY": API_KEY,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    const relevantBalances = data.balances.filter((balance) =>
+      COINS.includes(balance.asset)
+    );
+    const assets = {};
+    let totalValue = 0;
+
+    relevantBalances.forEach((balance) => {
+      const coin = balance.asset;
+      const freeAmount = parseFloat(balance.free);
+      assets[coin] = freeAmount;
+      totalValue += coin === "USDT" ? freeAmount : freeAmount * 1; // Simplified example
+    });
+
+    const values = {
+      AI: assets["AI"] || 0,
+      BTC: assets["BTC"] || 0,
+      MANA: assets["MANA"] || 0,
+      USDT: assets["USDT"] || 0,
     };
-  }
 
-  // The Handlebars code will be able to access the parameter values and build them into the page
-  return reply.view("/src/pages/index.hbs", params);
+    reply.view("/index.hbs", {
+      coins: COINS,
+      values,
+      total: totalValue.toFixed(2),
+    });
+  } catch (error) {
+    fastify.log.error(error);
+    reply.send("Error fetching data");
+  }
 });
 
-/**
- * Our POST route to handle and react to form submissions
- *
- * Accepts body data indicating the user choice
- */
-fastify.post("/", function (request, reply) {
-  // Build the params object to pass to the template
-  let params = { seo: seo };
-
-  // If the user submitted a color through the form it'll be passed here in the request body
-  let color = request.body.color;
-
-  // If it's not empty, let's try to find the color
-  if (color) {
-    // ADD CODE FROM TODO HERE TO SAVE SUBMITTED FAVORITES
-
-    // Load our color data file
-    const colors = require("./src/colors.json");
-
-    // Take our form submission, remove whitespace, and convert to lowercase
-    color = color.toLowerCase().replace(/\s/g, "");
-
-    // Now we see if that color is a key in our colors object
-    if (colors[color]) {
-      // Found one!
-      params = {
-        color: colors[color],
-        colorError: null,
-        seo: seo,
-      };
-    } else {
-      // No luck! Return the user value as the error property
-      params = {
-        colorError: request.body.color,
-        seo: seo,
-      };
-    }
+// Start server
+fastify.listen({ port: 3000, host: "0.0.0.0" }, (err, address) => {
+  if (err) {
+    fastify.log.error(err);
+    process.exit(1);
   }
-
-  // The Handlebars template will use the parameter values to update the page with the chosen color
-  return reply.view("/src/pages/index.hbs", params);
+  fastify.log.info(`Server running at ${address}`);
 });
-
-// Run the server and report out to the logs
-fastify.listen(
-  { port: process.env.PORT, host: "0.0.0.0" },
-  function (err, address) {
-    if (err) {
-      console.error(err);
-      process.exit(1);
-    }
-    console.log(`Your app is listening on ${address}`);
-  }
-);
