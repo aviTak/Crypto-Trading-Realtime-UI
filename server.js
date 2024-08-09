@@ -31,55 +31,68 @@ fastify.get('/', async (request, reply) => {
     coins: COINS,
     assets: assets.assets,
     totalValue: assets.totalValue.toFixed(2),
+    websocketUrl: process.env.WEBSOCKET_URL
   });
 });
 
 // Function to fetch the latest prices and balances
 async function fetchCurrentData() {
-  const API_KEY = process.env.BINANCE_API_KEY;
-  const API_SECRET = process.env.BINANCE_API_SECRET;
-  const BASE_URL = 'https://testnet.binance.vision';
+  try {
+    const API_KEY = process.env.BINANCE_API_KEY;
+    const API_SECRET = process.env.BINANCE_API_SECRET;
+    const BASE_URL = 'https://testnet.binance.vision';
 
-  const timestamp = Date.now();
-  const queryString = `timestamp=${timestamp}`;
-  const signature = CryptoJS.HmacSHA256(queryString, API_SECRET).toString(CryptoJS.enc.Hex);
+    const timestamp = Date.now();
+    const queryString = `timestamp=${timestamp}`;
+    const signature = CryptoJS.HmacSHA256(queryString, API_SECRET).toString(CryptoJS.enc.Hex);
 
-  const accountResponse = await fetch(`${BASE_URL}/api/v3/account?${queryString}&signature=${signature}`, {
-    headers: {
-      'X-MBX-APIKEY': API_KEY,
-    },
-  });
+    const accountResponse = await fetch(`${BASE_URL}/api/v3/account?${queryString}&signature=${signature}`, {
+      headers: {
+        'X-MBX-APIKEY': API_KEY,
+      },
+    });
 
-  const accountData = await accountResponse.json();
-  const relevantBalances = accountData.balances.filter(balance => COINS.includes(balance.asset));
-
-  const assets = {};
-  let totalValue = 0;
-
-  for (const coin of COINS) {
-    const balance = relevantBalances.find(b => b.asset === coin);
-    const quantity = parseFloat(balance ? balance.free : 0);
-
-    let usdtEquivalent = quantity;
-
-    if (coin !== 'USDT') {
-      const priceResponse = await fetch(`${BASE_URL}/api/v3/ticker/price?symbol=${coin}USDT`);
-      const priceData = await priceResponse.json();
-      const price = parseFloat(priceData.price);
-
-      usdtEquivalent = quantity * price;
+    if (!accountResponse.ok) {
+      throw new Error(`API Error: ${accountResponse.statusText}`);
     }
 
-    assets[coin] = {
-      quantity: quantity.toFixed(6),
-      usdtEquivalent: usdtEquivalent.toFixed(2),
-      websocketUrl: process.env.WEBSOCKET_URL
-    };
+    const accountData = await accountResponse.json();
+    const relevantBalances = accountData.balances.filter(balance => COINS.includes(balance.asset));
 
-    totalValue += usdtEquivalent;
+    const assets = {};
+    let totalValue = 0;
+
+    for (const coin of COINS) {
+      const balance = relevantBalances.find(b => b.asset === coin);
+      const quantity = parseFloat(balance ? balance.free : 0);
+
+      let usdtEquivalent = quantity;
+
+      if (coin !== 'USDT') {
+        const priceResponse = await fetch(`${BASE_URL}/api/v3/ticker/price?symbol=${coin}USDT`);
+        if (!priceResponse.ok) {
+          throw new Error(`Price API Error: ${priceResponse.statusText}`);
+        }
+        const priceData = await priceResponse.json();
+        const price = parseFloat(priceData.price);
+
+        usdtEquivalent = quantity * price;
+      }
+
+      assets[coin] = {
+        quantity: quantity.toFixed(6),
+        usdtEquivalent: usdtEquivalent.toFixed(2),
+      };
+
+      totalValue += usdtEquivalent;
+    }
+
+    return { assets, totalValue };
+
+  } catch (error) {
+    console.error('Error fetching current data:', error);
+    throw error; // Re-throw to handle elsewhere if needed
   }
-
-  return { assets, totalValue };
 }
 
 // WebSocket to handle real-time updates
@@ -87,25 +100,36 @@ wss.on('connection', (ws) => {
   console.log('Client connected');
 
   const streams = COINS.map(coin => `${coin.toLowerCase()}usdt@ticker`).join('/');
-  const wsBinance = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
+  const binanceUrl = `wss://stream.binance.com:9443/ws/${streams}`;
+  console.log(`Connecting to Binance WebSocket: ${binanceUrl}`);
 
-  // Handle errors on the WebSocket connection
+  const wsBinance = new WebSocket(binanceUrl);
+
+  wsBinance.on('open', () => {
+    console.log('Connected to Binance WebSocket');
+  });
+
   wsBinance.on('error', (error) => {
     console.error('WebSocket error:', error.message);
     ws.send(JSON.stringify({ error: 'Error connecting to Binance WebSocket' }));
   });
 
   wsBinance.on('message', async (data) => {
-    const parsedData = JSON.parse(data);
-    const coin = parsedData.s.slice(0, -4); // Get the coin symbol from the ticker
+    try {
+      const parsedData = JSON.parse(data);
+      const coin = parsedData.s.slice(0, -4); // Get the coin symbol from the ticker
 
-    const latestData = await fetchCurrentData();
+      const latestData = await fetchCurrentData();
 
-    ws.send(JSON.stringify({
-      coin: coin.toUpperCase(),
-      ...latestData.assets[coin.toUpperCase()],
-      totalValue: latestData.totalValue.toFixed(2),
-    }));
+      ws.send(JSON.stringify({
+        coin: coin.toUpperCase(),
+        ...latestData.assets[coin.toUpperCase()],
+        totalValue: latestData.totalValue.toFixed(2),
+      }));
+
+    } catch (error) {
+      console.error('Error processing WebSocket message:', error);
+    }
   });
 
   ws.on('close', () => {
@@ -119,7 +143,7 @@ wss.on('connection', (ws) => {
 // Run the server and WebSocket server
 fastify.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' }, (err, address) => {
   if (err) {
-    console.error(err);
+    console.error('Fastify server error:', err);
     process.exit(1);
   }
 
@@ -128,6 +152,7 @@ fastify.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' }, (err, addres
   const server = fastify.server;
 
   server.on('upgrade', (request, socket, head) => {
+    console.log('WebSocket upgrade request received');
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit('connection', ws, request);
     });
