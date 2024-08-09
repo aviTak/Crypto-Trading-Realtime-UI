@@ -101,8 +101,8 @@ wss.on('connection', (ws) => {
 
   // Dynamically construct streams for the coins you're tracking, excluding USDT
   const streams = COINS.filter(coin => coin !== 'USDT')
-                      .map(coin => `${coin.toLowerCase()}usdt@ticker`)
-                      .join('/');
+      .map(coin => `${coin.toLowerCase()}usdt@ticker`)
+      .join('/');
   const binanceUrl = `wss://stream.binance.com:9443/ws/${streams}`;
   console.log(`Connecting to Binance WebSocket: ${binanceUrl}`);
 
@@ -128,15 +128,24 @@ wss.on('connection', (ws) => {
 
       console.log('Received data from Binance:', parsedData);
 
+      // Fetch the latest data including all coins
       const latestData = await fetchCurrentData();
 
-      // Send data back to the connected client
+      // Send data back to the connected client for the specific coin
       ws.send(JSON.stringify({
         coin: coin,
         ...latestData.assets[coin],
         totalValue: latestData.totalValue.toFixed(2),
       }));
 
+      // If any coin's balance changed, ensure it's sent to the client
+      for (const updatedCoin of COINS) {
+        ws.send(JSON.stringify({
+          coin: updatedCoin,
+          ...latestData.assets[updatedCoin],
+          totalValue: latestData.totalValue.toFixed(2),
+        }));
+      }
     } catch (error) {
       console.error('Error processing WebSocket message:', error);
     }
