@@ -17,15 +17,19 @@
                     <th>USDT Equivalent</th>
                 </tr>
             </thead>
-            <tbody>
-                {{#each coins}}
-                <tr>
-                    <td>{{this}}</td>
-                    <td>{{../assets.[this].quantity}}</td>
-                    <td>{{../assets.[this].usdtEquivalent}} USDT</td>
-                </tr>
-                {{/each}}
-            </tbody>
+
+          <tbody>
+    {{#each coins}}
+    <tr>
+        <td>{{this}}</td>
+        {{#with (lookup ../assets this)}}
+        <td>{{quantity}}</td>
+        <td>{{usdtEquivalent}} USDT</td>
+        {{/with}}
+    </tr>
+    {{/each}}
+</tbody>
+
         </table>
     </div>
     <hr>
