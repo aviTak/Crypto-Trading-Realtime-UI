@@ -36,19 +36,38 @@
     <h2>Total Value: <span>{{totalValue}} USDT</span></h2>
   <!-- WebSocket script added here -->
     <script>
-        const ws = new WebSocket('{{websocketUrl}}');
-        
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            console.log('Received data:', data);
+        // const ws = new WebSocket('wss://ctrade.glitch.me');
+      
+      const ws = new WebSocket('wss://ctrade.glitch.me'); // Replace with your actual Glitch project URL
 
-            // Update the specific coin's quantity and USDT equivalent
-            document.querySelector(`#quantity-${data.coin}`).innerText = data.quantity;
-            document.querySelector(`#usdtEquivalent-${data.coin}`).innerText = `${data.usdtEquivalent} USDT`;
-
-            // Update the total value
-            document.querySelector('#totalValue').innerText = `${data.totalValue} USDT`;
+        ws.onopen = function() {
+            console.log('WebSocket connection opened');
+            ws.send('Hello Server!');
         };
+
+        ws.onmessage = function(event) {
+            console.log('Received data:', event.data);
+        };
+
+        ws.onerror = function(error) {
+            console.log('WebSocket error:', error);
+        };
+
+        ws.onclose = function() {
+            console.log('WebSocket connection closed');
+        };
+        
+//         ws.onmessage = function(event) {
+//             const data = JSON.parse(event.data);
+//             console.log('Received data:', data);
+
+//             // Update the specific coin's quantity and USDT equivalent
+//             document.querySelector(`#quantity-${data.coin}`).innerText = data.quantity;
+//             document.querySelector(`#usdtEquivalent-${data.coin}`).innerText = `${data.usdtEquivalent} USDT`;
+
+//             // Update the total value
+//             document.querySelector('#totalValue').innerText = `${data.totalValue} USDT`;
+//         };
     </script>
 </body>
 </html>
