@@ -32,8 +32,7 @@ fastify.get('/', async (request, reply) => {
   return reply.view('/src/pages/index.hbs', {
     coins: COINS,
     assets: assets.assets,
-    totalValue: assets.totalValue.toFixed(2),
-    websocketUrl: process.env.WEBSOCKET_URL
+    totalValue: assets.totalValue.toFixed(2)
   });
 });
 
