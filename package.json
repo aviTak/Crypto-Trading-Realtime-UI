@@ -10,6 +10,7 @@
     "@fastify/formbody": "^7.4.0",
     "@fastify/static": "^6.10.2",
     "@fastify/view": "^8.0.0",
+    "bottleneck": "^2.19.5",
     "crypto-js": "^4.2.0",
     "dotenv": "^16.4.5",
     "fastify": "^4.21.0",
