@@ -11,7 +11,6 @@ const fastify = Fastify({ logger: false });
 // Define the coins you want to track
 const COINS = process.env.COINS ? process.env.COINS.split(',') : ['AI', 'BTC', 'MANA', 'USDT'];
 
-
 // General request limiter for APIs that fall under REQUEST_WEIGHT
 const generalRequestLimiter = new Bottleneck({
   reservoir: 6000, // 6000 weight units per minute
