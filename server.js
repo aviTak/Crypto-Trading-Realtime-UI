@@ -5,10 +5,28 @@ const Fastify = require('fastify');
 const fetch = require('node-fetch');
 const WebSocket = require('ws');
 const CryptoJS = require('crypto-js');
+const Bottleneck = require('bottleneck');
 const fastify = Fastify({ logger: false });
 
 // Define the coins you want to track
 const COINS = process.env.COINS ? process.env.COINS.split(',') : ['AI', 'BTC', 'MANA', 'USDT'];
+
+
+// General request limiter for APIs that fall under REQUEST_WEIGHT
+const generalRequestLimiter = new Bottleneck({
+  reservoir: 6000, // 6000 weight units per minute
+  reservoirRefreshAmount: 6000, // Refill 6000 units every minute
+  reservoirRefreshInterval: 60 * 1000, // Refill every 60 seconds
+  minTime: 10 // Minimum time between requests (10ms per request)
+});
+
+// Raw requests limiter
+const rawRequestLimiter = new Bottleneck({
+  reservoir: 61000, // Allow 61,000 requests per 5 minutes
+  reservoirRefreshAmount: 61000, // Refill 61,000 requests
+  reservoirRefreshInterval: 5 * 60 * 1000, // Refill every 5 minutes
+  minTime: 5 // Minimum time between requests (5ms per request)
+});
 
 // Setup WebSocket Server
 const wss = new WebSocket.Server({ noServer: true });
@@ -47,11 +65,15 @@ async function fetchCurrentData() {
     const queryString = `timestamp=${timestamp}`;
     const signature = CryptoJS.HmacSHA256(queryString, API_SECRET).toString(CryptoJS.enc.Hex);
 
-    const accountResponse = await fetch(`${BASE_URL}/api/v3/account?${queryString}&signature=${signature}`, {
-      headers: {
-        'X-MBX-APIKEY': API_KEY,
-      },
-    });
+    const accountResponse = await generalRequestLimiter.schedule(() =>
+      rawRequestLimiter.schedule(() =>
+        fetch(`${BASE_URL}/api/v3/account?${queryString}&signature=${signature}`, {
+          headers: {
+            'X-MBX-APIKEY': API_KEY,
+          }
+        })
+      )
+    );
 
     if (!accountResponse.ok) {
       throw new Error(`API Error: ${accountResponse.statusText}`);
@@ -70,7 +92,12 @@ async function fetchCurrentData() {
       let usdtEquivalent = quantity;
 
       if (coin !== 'USDT') {
-        const priceResponse = await fetch(`${BASE_URL}/api/v3/ticker/price?symbol=${coin}USDT`);
+        const priceResponse = await generalRequestLimiter.schedule(() =>
+          rawRequestLimiter.schedule(() =>
+            fetch(`${BASE_URL}/api/v3/ticker/price?symbol=${coin}USDT`)
+          )
+        );
+
         if (!priceResponse.ok) {
           throw new Error(`Price API Error: ${priceResponse.statusText}`);
         }
