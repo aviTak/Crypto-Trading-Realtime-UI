@@ -45,18 +45,12 @@ fastify.register(require('@fastify/view'), {
 
 // Home page route
 fastify.get('/', async (request, reply) => {
-  try {
-    const assets = await fetchCurrentData();
-    return reply.view('/src/pages/index.hbs', {
-      coins: COINS,
-      assets: assets.assets,
-      totalValue: assets.totalValue.toFixed(2),
-      websocketUrl: process.env.WEBSOCKET_URL
-    });
-  } catch (error) {
-    console.error('Error rendering home page:', error);
-    return reply.status(500).send('Internal Server Error');
-  }
+  const assets = await fetchCurrentData();
+  return reply.view('/src/pages/index.hbs', {
+    coins: COINS,
+    assets: assets.assets,
+    totalValue: assets.totalValue.toFixed(2)
+  });
 });
 
 // Function to fetch the latest prices and balances
@@ -128,8 +122,9 @@ async function fetchCurrentData() {
   }
 }
 
-// WebSocket connection logic with ping/pong handling and reconnection
-function connectWebSocket(ws) {
+wss.on('connection', (ws) => {
+  console.log('Client connected');
+
   // Dynamically construct streams for the coins you're tracking, excluding USDT
   const streams = COINS.filter(coin => coin !== 'USDT')
       .map(coin => `${coin.toLowerCase()}usdt@ticker`)
@@ -141,16 +136,6 @@ function connectWebSocket(ws) {
 
   wsBinance.on('open', () => {
     console.log('Connected to Binance WebSocket');
-    startPingPong(wsBinance);
-  });
-
-  wsBinance.on('ping', () => {
-    console.log('Received ping from Binance, sending pong');
-    wsBinance.pong();
-  });
-
-  wsBinance.on('pong', () => {
-    console.log('Received pong from Binance, connection is alive');
   });
 
   wsBinance.on('error', (error) => {
@@ -160,7 +145,6 @@ function connectWebSocket(ws) {
 
   wsBinance.on('close', (code, reason) => {
     console.error('Binance WebSocket closed:', code, reason);
-    reconnectWebSocket(ws); // Reconnect WebSocket if closed
   });
 
   wsBinance.on('message', async (data) => {
@@ -199,29 +183,6 @@ function connectWebSocket(ws) {
       wsBinance.close();
     }
   });
-}
-
-// Start the ping/pong mechanism to keep the connection alive
-function startPingPong(wsBinance) {
-  const pingInterval = setInterval(() => {
-    if (wsBinance.readyState === WebSocket.OPEN) {
-      console.log('Sending unsolicited pong');
-      wsBinance.pong(); // Sending an empty pong frame as recommended
-    }
-  }, 2 * 60 * 1000); // Every 2 minutes
-
-  wsBinance.on('close', () => clearInterval(pingInterval)); // Clear interval on close
-}
-
-// Reconnect WebSocket after a disconnection
-function reconnectWebSocket(ws) {
-  console.log('Attempting to reconnect WebSocket in 5 seconds...');
-  setTimeout(() => connectWebSocket(ws), 5000); // Reconnect after 5 seconds
-}
-
-wss.on('connection', (ws) => {
-  console.log('Client connected');
-  connectWebSocket(ws);
 });
 
 fastify.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' }, (err, address) => {
@@ -242,3 +203,6 @@ fastify.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' }, (err, addres
     });
   });
 });
+
+
+
