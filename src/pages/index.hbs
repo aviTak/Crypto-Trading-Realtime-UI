@@ -14,7 +14,7 @@
                 <tr>
                     <th>Coin</th>
                     <th>Quantity</th>
-                    <th>Value in USDT</th>
+                    <th class="value">Value</th>
                 </tr>
             </thead>
             <tbody>
@@ -23,7 +23,7 @@
                     <td>{{this}}</td>
                     {{#with (lookup ../assets this)}}
                     <td id="quantity-{{@../this}}">{{quantity}}</td>
-                    <td id="usdtEquivalent-{{@../this}}">{{usdtEquivalent}} USDT</td>
+                    <td id="usdtEquivalent-{{@../this}}" class="value">{{usdtEquivalent}} USDT</td>
                     {{/with}}
                 </tr>
                 {{/each}}
