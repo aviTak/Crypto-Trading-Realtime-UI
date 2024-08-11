@@ -64,8 +64,8 @@ async function fetchCurrentData() {
     const queryString = `timestamp=${timestamp}`;
     const signature = CryptoJS.HmacSHA256(queryString, API_SECRET).toString(CryptoJS.enc.Hex);
 
-    const accountResponse = await generalRequestLimiter.schedule(() =>
-      rawRequestLimiter.schedule(() =>
+    const accountResponse = await generalRequestLimiter.schedule({ weight: 10 }, () =>
+      rawRequestLimiter.schedule({ weight: 10 }, () =>
         fetch(`${BASE_URL}/api/v3/account?${queryString}&signature=${signature}`, {
           headers: {
             'X-MBX-APIKEY': API_KEY,
