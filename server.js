@@ -91,8 +91,8 @@ async function fetchCurrentData() {
       let usdtEquivalent = quantity;
 
       if (coin !== 'USDT') {
-        const priceResponse = await generalRequestLimiter.schedule(() =>
-          rawRequestLimiter.schedule(() =>
+        const priceResponse = await generalRequestLimiter.schedule({ weight: 1 }, () =>
+          rawRequestLimiter.schedule({ weight: 1 }, () =>
             fetch(`${BASE_URL}/api/v3/ticker/price?symbol=${coin}USDT`)
           )
         );
