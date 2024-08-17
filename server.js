@@ -9,7 +9,7 @@ const Bottleneck = require('bottleneck');
 const fastify = Fastify({ logger: false });
 
 // Define the coins you want to track
-const COINS = process.env.COINS ? process.env.COINS.split(',') : ['AI', 'BTC', 'MANA', 'USDT'];
+const COINS = process.env.COINS ? process.env.COINS.split(',') : ['USDT'];
 
 // General request limiter for APIs that fall under REQUEST_WEIGHT
 const generalRequestLimiter = new Bottleneck({
@@ -203,6 +203,3 @@ fastify.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' }, (err, addres
     });
   });
 });
-
-
-
