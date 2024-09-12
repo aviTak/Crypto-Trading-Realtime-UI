@@ -1,7 +1,3 @@
-Here's a detailed README for your project:
-
----
-
 # Crypto Trading Realtime UI
 
 This is a **backend project** built with **Fastify**, **Handlebars**, **WebSockets**, and the **Binance API**. The purpose of this UI is to check the balance of individual assets as well as the total asset value in both **test** and **production environments** for Binance users. It is designed as a companion tool for the **Binance Algo Trader** project to visualize real-time account balances and asset values.
@@ -40,20 +36,47 @@ This project supports:
   
 ## Environment Setup
 
-The project uses a `.env` file for environment-specific configurations. You need to create this file to connect to the Binance API and set up WebSocket communication. Here's an example of the `.env` file:
+The project uses a `.env` file for environment-specific configurations. You need to create this file to connect to the Binance API and set up WebSocket communication.
 
+Here's a proper `.env` format example for your Binance API keys and settings:
+
+### `.env` Example:
+```env
+# Binance API Credentials
+BINANCE_API_KEY=BsqzqZH5xaWHuxaTFR7O5sQxXhrnyO26ThGgcdrTHWiK0m9upREB9JuiJZSqDE3K
+BINANCE_API_SECRET=kYbAPQRNmOkDFTGgmkRKzkkM9RvGxJwPniI9EKGaKbWeBeoklSkuAtdLQq1xjG72
+
+# API Base URL (Testnet or Production)
+BASE_URL=https://testnet.binance.vision
+
+# List of Coins (Comma-separated values)
+COINS=AI,BTC,MANA,USDT
 ```
-# .env
 
-# Binance API keys for test or prod environment
-BINANCE_API_KEY=your_binance_api_key
-BINANCE_API_SECRET=your_binance_api_secret
+### Explanation:
+- **BINANCE_API_KEY**: Your API key for authenticating with the Binance API.
+- **BINANCE_API_SECRET**: Your secret key for signing API requests.
+- **BASE_URL**: The base URL for Binance's API (Testnet or production). In this case, it's set to Binance's testnet URL.
+- **COINS**: A list of cryptocurrencies you're interested in, specified as comma-separated values (e.g., `AI`, `BTC`, `MANA`, `USDT`).
 
-# Specify whether you're working in test or production
-ENVIRONMENT=test  # Use 'prod' for production
+This file should be placed at the root of your project, and you can use a library like `dotenv` in Node.js to load these variables into your application. Here's a simple example in Node.js:
+
+### Node.js Example:
+```javascript
+require('dotenv').config();
+
+const binanceApiKey = process.env.BINANCE_API_KEY;
+const binanceApiSecret = process.env.BINANCE_API_SECRET;
+const baseUrl = process.env.BASE_URL;
+const coins = process.env.COINS.split(',');
+
+console.log('API Key:', binanceApiKey);
+console.log('API Secret:', binanceApiSecret);
+console.log('Base URL:', baseUrl);
+console.log('Coins:', coins);
 ```
 
-Replace `your_binance_api_key` and `your_binance_api_secret` with the appropriate values. The `ENVIRONMENT` variable determines whether the project is using the Binance **test** or **production** environment.
+This setup allows you to access your API credentials and coin list from environment variables safely without hardcoding them into your codebase.
 
 ## Installation
 
