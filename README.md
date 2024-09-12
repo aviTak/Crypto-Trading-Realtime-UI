@@ -1,44 +1,167 @@
-# Hello Node!
+Here's a detailed README for your project:
 
-This project includes a Node.js server script and a web page that connects to it. The front-end page presents a form the visitor can use to submit a color name, sending the submitted value to the back-end API running on the server. The server returns info to the page that allows it to update the display with the chosen color. 🎨
+---
 
-[Node.js](https://nodejs.org/en/about/) is a popular runtime that lets you run server-side JavaScript. This project uses the [Fastify](https://www.fastify.io/) framework and explores basic templating with [Handlebars](https://handlebarsjs.com/).
+# Crypto Trading Realtime UI
 
-_Last updated: 14 August 2023_
+This is a **backend project** built with **Fastify**, **Handlebars**, **WebSockets**, and the **Binance API**. The purpose of this UI is to check the balance of individual assets as well as the total asset value in both **test** and **production environments** for Binance users. It is designed as a companion tool for the **Binance Algo Trader** project to visualize real-time account balances and asset values.
 
-## Prerequisites
+## Table of Contents
 
-You'll get best use out of this project if you're familiar with basic JavaScript. If you've written JavaScript for client-side web pages this is a little different because it uses server-side JS, but the syntax is the same!
+- [Project Overview](#project-overview)
+- [Features](#features)
+- [Environment Setup](#environment-setup)
+- [Installation](#installation)
+- [Running the Application](#running-the-application)
+- [API Documentation](#api-documentation)
+- [WebSocket Integration](#websocket-integration)
+- [Folder Structure](#folder-structure)
+- [Adding UI Screenshots](#adding-ui-screenshots)
+- [Contributing](#contributing)
+- [License](#license)
 
-## What's in this project?
+## Project Overview
 
-← `README.md`: That’s this file, where you can tell people what your cool website does and how you built it.
+The **Crypto Trading Realtime UI** is a backend system to check real-time balances for both individual assets and the total value of all assets held in a Binance account. It connects to the **Binance API** to fetch and display this data using WebSockets for live updates. The UI is rendered using **Handlebars templates** for a responsive and elegant user interface.
 
-← `public/style.css`: The styling rules for the pages in your site.
+This project supports:
+- **Fastify** as the web framework for high performance.
+- **WebSockets** to receive real-time updates.
+- **Binance API** for fetching asset balances.
+- **Handlebars** for rendering dynamic data.
 
-← `server.js`: The **Node.js** server script for your new site. The JavaScript defines the endpoints in the site back-end, one to return the homepage and one to update with the submitted color. Each one sends data to a Handlebars template which builds these parameter values into the web page the visitor sees.
+## Features
 
-← `package.json`: The NPM packages for your project's dependencies.
+- **Real-time balance updates** for individual assets and total value.
+- **Test and Production environments** with dynamic switching via configuration.
+- **WebSockets** for real-time communication and data updates.
+- **Responsive UI** built using Handlebars templates (add UI screenshots below).
+- **API Integration** with Binance to fetch balances.
+  
+## Environment Setup
 
-← `src/`: This folder holds the site template along with some basic data files.
+The project uses a `.env` file for environment-specific configurations. You need to create this file to connect to the Binance API and set up WebSocket communication. Here's an example of the `.env` file:
 
-← `src/pages/index.hbs`: This is the main page template for your site. The template receives parameters from the server script, which it includes in the page HTML. The page sends the user submitted color value in the body of a request, or as a query parameter to choose a random color.
+```
+# .env
 
-← `src/colors.json`: A collection of CSS color names. We use this in the server script to pick a random color, and to match searches against color names.
+# Binance API keys for test or prod environment
+BINANCE_API_KEY=your_binance_api_key
+BINANCE_API_SECRET=your_binance_api_secret
 
-← `src/seo.json`: When you're ready to share your new site or add a custom domain, change SEO/meta settings in here.
+# Specify whether you're working in test or production
+ENVIRONMENT=test  # Use 'prod' for production
+```
 
-## Try this next 🏗️
+Replace `your_binance_api_key` and `your_binance_api_secret` with the appropriate values. The `ENVIRONMENT` variable determines whether the project is using the Binance **test** or **production** environment.
 
-Take a look in `TODO.md` for next steps you can try out in your new site!
+## Installation
 
-___Want a minimal version of this project to build your own Node.js app? Check out [Blank Node](https://glitch.com/edit/#!/remix/glitch-blank-node)!___
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/aviTak/Crypto-Trading-Realtime-UI.git
+   cd Crypto-Trading-Realtime-UI
+   ```
 
-![Glitch](https://cdn.glitch.com/a9975ea6-8949-4bab-addb-8a95021dc2da%2FLogo_Color.svg?v=1602781328576)
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-## You built this with Glitch!
+3. **Set up the environment**:
+   Create a `.env` file in the root directory with the details mentioned in the [Environment Setup](#environment-setup) section.
 
-[Glitch](https://glitch.com) is a friendly community where millions of people come together to build web apps and websites.
+## Running the Application
 
-- Need more help? [Check out our Help Center](https://help.glitch.com/) for answers to any common questions.
-- Ready to make it official? [Become a paid Glitch member](https://glitch.com/pricing) to boost your app with private sharing, more storage and memory, domains and more.
+To run the application, use the following command:
+
+```bash
+npm start
+```
+
+This will start the Fastify server on the default port `3000`. You can configure this port using environment variables in the `.env` file.
+
+- **Test environment**: Data is fetched from Binance's test API.
+- **Production environment**: Data is fetched from the live Binance API.
+
+### Development Mode
+
+For easier development and live reloading, you can run the app in development mode using:
+
+```bash
+npm run dev
+```
+
+This will enable live reloading, which is useful during development.
+
+## API Documentation
+
+This project exposes an API endpoint to fetch Binance account data:
+
+### GET `/api/balance`
+
+- Fetches the individual balances for all assets in the Binance account.
+- Returns total balance in USDT equivalent.
+- WebSockets will continuously update the balance if there are changes in real-time.
+
+Example response:
+
+```json
+{
+  "balances": {
+    "BTC": { "asset": "BTC", "free": "0.001", "locked": "0" },
+    "ETH": { "asset": "ETH", "free": "0.05", "locked": "0" },
+    ...
+  },
+  "totalValueInUSDT": "2000.50"
+}
+```
+
+## WebSocket Integration
+
+This project uses **WebSockets** to establish a persistent connection between the client and server. It continuously fetches the latest balance data and updates the UI in real-time. The WebSocket connection is automatically established when the page is loaded, ensuring no lag between account changes and updates on the UI.
+
+## Folder Structure
+
+```bash
+.
+├── public/             # Static assets (CSS, JS, etc.)
+├── views/              # Handlebars templates
+├── routes/             # Fastify route definitions
+├── services/           # Binance API service integration
+├── websocket/          # WebSocket server setup
+├── .env                # Environment variables
+├── server.js           # Fastify server entry point
+└── package.json        # Project dependencies
+```
+
+## Adding UI Screenshots
+
+You can add screenshots of the UI to the `/public/images` folder and reference them in the README to provide a visual representation of the app. Here’s an example of how to add them:
+
+```markdown
+![UI Screenshot](public/images/screenshot1.png)
+```
+
+## Contributing
+
+If you'd like to contribute to this project, you can fork the repository, make changes, and submit a pull request.
+
+### Fork Instructions
+
+1. Click the **Fork** button in the top-right corner of the repository page.
+2. Clone the forked repository:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/Crypto-Trading-Realtime-UI.git
+   ```
+3. Make your changes and push them to your fork:
+   ```bash
+   git add .
+   git commit -m "Your detailed description of the changes."
+   git push origin main
+   ```
+4. Open a pull request and describe your changes.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
