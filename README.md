@@ -160,7 +160,11 @@ This project uses **WebSockets** to establish a persistent connection between th
 
 ## UI Screenshots
 
-![UI Screenshot](public/images/screenshot1.png)
+### Desktop View
+![Desktop UI Screenshot](public/images/screenshot1.png)
+
+### Mobile View
+![Mobile UI Screenshot](public/images/screenshot2.png)
 
 ## Contributing
 
