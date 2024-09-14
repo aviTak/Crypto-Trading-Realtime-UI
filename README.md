@@ -160,9 +160,7 @@ This project uses **WebSockets** to establish a persistent connection between th
 
 ## UI Screenshots
 
-```markdown
 ![UI Screenshot](public/images/screenshot1.png)
-```
 
 ## Contributing
 
