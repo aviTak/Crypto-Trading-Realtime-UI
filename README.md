@@ -33,7 +33,7 @@ This project supports:
 - **WebSockets** for real-time communication and data updates.
 - **Responsive UI** built using Handlebars templates (add UI screenshots below).
 - **API Integration** with Binance to fetch balances.
-  
+
 ## Environment Setup
 
 The project uses a `.env` file for environment-specific configurations. You need to create this file to connect to the Binance API and set up WebSocket communication.
@@ -158,9 +158,7 @@ This project uses **WebSockets** to establish a persistent connection between th
 └── package.json        # Project dependencies
 ```
 
-## Adding UI Screenshots
-
-You can add screenshots of the UI to the `/public/images` folder and reference them in the README to provide a visual representation of the app. Here’s an example of how to add them:
+## UI Screenshots
 
 ```markdown
 ![UI Screenshot](public/images/screenshot1.png)
