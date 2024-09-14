@@ -158,13 +158,9 @@ This project uses **WebSockets** to establish a persistent connection between th
 └── package.json        # Project dependencies
 ```
 
-## UI Screenshots
+## UI Screenshot
 
-### Desktop View
-![Desktop UI Screenshot](public/images/screenshot1.png)
-
-### Mobile View
-![Mobile UI Screenshot](public/images/screenshot2.png)
+![UI Screenshot](public/images/screenshot1.png)
 
 ## Contributing
 
